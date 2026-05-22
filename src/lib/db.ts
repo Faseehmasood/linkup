@@ -1,32 +1,42 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
-
-if (!MONGODB_URI) {
+if (!process.env.MONGODB_URI) {
   throw new Error("MONGODB_URI is not defined in .env.local");
 }
 
-interface MongooseCache {
-  conn: typeof mongoose | null;
-  promise: Promise<typeof mongoose> | null;
-}
+const MONGODB_URI = process.env.MONGODB_URI;
 
 declare global {
-  var mongoose: MongooseCache | undefined;
+  var mongoose: {
+    conn: mongoose.Connection | null;
+    promise: Promise<mongoose.Connection> | null;
+  };
 }
 
-const cached: MongooseCache = global.mongoose ?? { conn: null, promise: null };
-global.mongoose = cached;
+let cached = global.mongoose;
 
-const connectDB = async (): Promise<typeof mongoose> => {
+if (!cached) {
+  cached = global.mongoose = {
+    conn: null,
+    promise: null,
+  };
+}
+
+const connectDB = async () => {
   if (cached.conn) {
+    console.log("MongoDB already connected!");
     return cached.conn;
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      bufferCommands: false,
-    });
+    cached.promise = mongoose
+      .connect(MONGODB_URI, {
+        bufferCommands: false,
+      })
+      .then((m) => {
+        console.log("MongoDB Connected Successfully!");
+        return m.connection;
+      });
   }
 
   cached.conn = await cached.promise;
