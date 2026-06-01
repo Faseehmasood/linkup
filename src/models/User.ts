@@ -36,6 +36,7 @@ const UserSchema = new Schema<IUser, UserModel, IUserMethods>(
     password: {
       type: String,
       minlength: [8, "Password must be at least 8 characters"],
+      select: false,
     },
     googleId: {
       type: String,
