@@ -13,7 +13,7 @@ export const createClientValidator = z.object({
     .toLowerCase(),
   company: z
     .string()
-    .max(100, "Company name cannot exceed 100 characters")
+    .max(350, "Company name cannot exceed 350 characters")
     .trim()
     .optional(),
   phone: z
