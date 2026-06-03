@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
-import Client from "@/models/Client";
+import Project from "@/models/Project";
 import asyncHandler from "@/lib/asyncHandler";
 import ApiError from "@/lib/ApiError";
 import ApiResponse from "@/lib/ApiResponse";
-import { updateClientValidator } from "@/lib/validators/client.validator";
+import { updateProjectValidator } from "@/lib/validators/project.validator";
 import mongoose from "mongoose";
 import getFreelancerId from "@/lib/getFreelancerId";
-
 
 
 
@@ -17,73 +16,75 @@ export const GET = asyncHandler(async (req: NextRequest, context: unknown) => {
   const { id } = await (context as { params: Promise<{ id: string }> }).params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new ApiError(400, "Invalid client ID");
+    throw new ApiError(400, "Invalid project ID");
   }
 
-  const client = await Client.findOne({ _id: id, freelancerId });
-  if (!client) {
-    throw new ApiError(404, "Client not found");
+  const project = await Project.findOne({ _id: id, freelancerId })
+    .populate("clientId", "name email company");
+
+  if (!project) {
+    throw new ApiError(404, "Project not found");
   }
 
   return NextResponse.json(
-    new ApiResponse(200, "Client fetched successfully", client)
+    new ApiResponse(200, "Project fetched successfully", project)
   );
 });
 
-// PATCH — client update karo
+
 export const PATCH = asyncHandler(async (req: NextRequest, context: unknown) => {
   await connectDB();
   const freelancerId = await getFreelancerId(req);
   const { id } = await (context as { params: Promise<{ id: string }> }).params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new ApiError(400, "Invalid client ID");
+    throw new ApiError(400, "Invalid project ID");
   }
 
   const body = await req.json();
-  const result = updateClientValidator.safeParse(body);
+  const result = updateProjectValidator.safeParse(body);
   if (!result.success) {
     throw new ApiError(400, "Validation failed",
       result.error.issues.map((e) => e.message)
     );
   }
 
-  const client = await Client.findOneAndUpdate(
+  if (result.data.deadline) {
+    result.data.deadline = new Date(result.data.deadline) as unknown as string;
+  }
+
+  const project = await Project.findOneAndUpdate(
     { _id: id, freelancerId },
     { $set: result.data },
     { new: true, runValidators: true }
-  );
+  ).populate("clientId", "name email company");
 
-  if (!client) {
-    throw new ApiError(404, "Client not found");
+  if (!project) {
+    throw new ApiError(404, "Project not found");
   }
 
   return NextResponse.json(
-    new ApiResponse(200, "Client updated successfully", client)
+    new ApiResponse(200, "Project updated successfully", project)
   );
 });
 
-// DELETE — soft delete
+
 export const DELETE = asyncHandler(async (req: NextRequest, context: unknown) => {
   await connectDB();
   const freelancerId = await getFreelancerId(req);
   const { id } = await (context as { params: Promise<{ id: string }> }).params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new ApiError(400, "Invalid client ID");
+    throw new ApiError(400, "Invalid project ID");
   }
 
-  const client = await Client.findOneAndUpdate(
-    { _id: id, freelancerId },
-    { $set: { isActive: false } },
-    { new: true }
-  );
+  const project = await Project.findOneAndDelete({ _id: id, freelancerId });
 
-  if (!client) {
-    throw new ApiError(404, "Client not found");
+  if (!project) {
+    throw new ApiError(404, "Project not found");
   }
 
   return NextResponse.json(
-    new ApiResponse(200, "Client deleted successfully", null)
+    new ApiResponse(200, "Project deleted successfully", null)
   );
 });

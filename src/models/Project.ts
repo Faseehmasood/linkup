@@ -3,7 +3,7 @@ import mongoose, { Schema } from "mongoose";
 export interface IProject {
   title: string;
   description?: string;
-  status: "active" | "completed" | "on hold";
+  status: "active" | "completed" | "on-hold";
   deadline?: Date;
   totalAmount: number;
   currency: "USD" | "EUR" | "GBP" | "PKR";

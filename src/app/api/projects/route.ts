@@ -1,25 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
-import Client from "@/models/Client";
+import Project from "@/models/Project";
 import asyncHandler from "@/lib/asyncHandler";
 import ApiError from "@/lib/ApiError";
 import ApiResponse from "@/lib/ApiResponse";
-import { createClientValidator } from "@/lib/validators/client.validator";
+import { createProjectValidator } from "@/lib/validators/project.validator";
 import getFreelancerId from "@/lib/getFreelancerId";
-
-
 
 export const GET = asyncHandler(async (req: NextRequest) => {
   await connectDB();
   const freelancerId = await getFreelancerId(req);
 
-  const clients = await Client.find({ 
-    freelancerId,
-    isActive: true 
-  }).sort({ createdAt: -1 });
+  const projects = await Project.find({ freelancerId })
+    .populate("clientId", "name email company")
+    .sort({ createdAt: -1 });
 
   return NextResponse.json(
-    new ApiResponse(200, "Clients fetched successfully", clients)
+    new ApiResponse(200, "Projects fetched successfully", projects)
   );
 });
 
@@ -30,31 +27,30 @@ export const POST = asyncHandler(async (req: NextRequest) => {
 
   const body = await req.json();
 
-  const result = createClientValidator.safeParse(body);
+  const result = createProjectValidator.safeParse(body);
   if (!result.success) {
     throw new ApiError(400, "Validation failed",
       result.error.issues.map((e) => e.message)
     );
   }
 
-  const { name, email, company, phone } = result.data;
+  const { title, description, status, deadline, totalAmount, currency, clientId } = result.data;
 
-  // Email pehle se exist toh nahi
-  const existingClient = await Client.findOne({ email, freelancerId });
-  if (existingClient) {
-    throw new ApiError(409, "Client with this email already exists");
-  }
-
-  const client = await Client.create({
-    name,
-    email,
-    company,
-    phone,
+  const project = await Project.create({
+    title,
+    description,
+    status,
+    deadline: deadline ? new Date(deadline) : undefined,
+    totalAmount,
+    currency,
+    clientId,
     freelancerId,
   });
 
+  const populatedProject = await project.populate("clientId", "name email company");
+
   return NextResponse.json(
-    new ApiResponse(201, "Client created successfully", client),
+    new ApiResponse(201, "Project created successfully", populatedProject),
     { status: 201 }
   );
 });
