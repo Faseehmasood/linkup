@@ -10,6 +10,7 @@ export interface IMilestone {
   projectId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  isActive: boolean;
 }
 
 type MilestoneModel = mongoose.Model<IMilestone>;
@@ -48,6 +49,10 @@ const MilestoneSchema = new Schema<IMilestone, MilestoneModel>(
       type: Schema.Types.ObjectId,
       ref: "Project",
       required: [true, "Project is required"],
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   {
