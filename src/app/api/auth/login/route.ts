@@ -12,7 +12,6 @@ export const POST = asyncHandler(async (req: NextRequest) => {
 
   const body = await req.json();
 
-  // Zod valid kiya
   const result = loginValidator.safeParse(body);
   if (!result.success) {
     throw new ApiError(400, "Validation failed",
@@ -22,7 +21,6 @@ export const POST = asyncHandler(async (req: NextRequest) => {
 
   const { email, password } = result.data;
 
-  
   const user = await User.findOne({ email }).select("+password");
   if (!user) {
     throw new ApiError(401, "Invalid email or password");

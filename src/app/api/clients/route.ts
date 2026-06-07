@@ -39,7 +39,7 @@ export const POST = asyncHandler(async (req: NextRequest) => {
 
   const { name, email, company, phone } = result.data;
 
-  // Email pehle se exist toh nahi
+  
   const existingClient = await Client.findOne({ email, freelancerId });
   if (existingClient) {
     throw new ApiError(409, "Client with this email already exists");
