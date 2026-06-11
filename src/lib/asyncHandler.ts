@@ -8,6 +8,8 @@ const asyncHandler = (fn: Handler): Handler => {
     try {
       return await fn(req, context);
     } catch (error) {
+      console.error("CRASH ERROR: ", error);
+
       if (error instanceof ApiError) {
         return NextResponse.json(
           {
